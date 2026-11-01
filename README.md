@@ -1,1 +1,2 @@
-# SandBoxed-AI-agent
+# FRIDAY
+a generalized sandboxed ai-agent
