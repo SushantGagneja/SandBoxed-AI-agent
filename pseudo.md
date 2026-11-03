@@ -142,3 +142,36 @@ func agentLoop(client *http.Client, apiKey string, history []Message) ([]Message
     }
 }
 ```
+### HTTP call
+
+```go
+func callAPI(c *http.Client, key string, r Request) (*Response, error) {
+    body, _ := json.Marshal(r)
+
+    req, _ := http.NewRequest(
+        "POST",
+        "https://api.anthropic.com/v1/messages",
+        bytes.NewReader(body),
+    )
+
+    req.Header.Set("x-api-key", key)
+    req.Header.Set("anthropic-version", "2023-06-01")
+    req.Header.Set("content-type", "application/json")
+
+    res, err := c.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    defer res.Body.Close()
+
+    data, _ := io.ReadAll(res.Body)
+
+    if res.StatusCode != 200 {
+        return nil, fmt.Errorf("api %d: %s", res.StatusCode, data)
+    }
+
+    var out Response
+    return &out, json.Unmarshal(data, &out)
+}
+```
+
