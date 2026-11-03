@@ -50,3 +50,39 @@ type Response struct {
     StopReason string         `json:"stop_reason"` // "end_turn" | "tool_use" | "max_tokens"
 }
 ```
+## Tool definition and handler
+
+```go
+var fileReadTool = Tool{
+    Name:        "file_read",
+    Description: "Read the contents of a file at the given path.",
+    InputSchema: map[string]any{
+        "type": "object",
+        "properties": map[string]any{
+            "path": map[string]any{
+                "type":        "string",
+                "description": "Absolute file path",
+            },
+        },
+        "required": []string{"path"},
+    },
+}
+
+func runTool(name string, input json.RawMessage) (string, error) {
+    switch name {
+    case "file_read":
+        var in struct {
+            Path string `json:"path"`
+        }
+
+        if err := json.Unmarshal(input, &in); err != nil {
+            return "", err
+        }
+
+        b, err := os.ReadFile(in.Path)
+        return string(b), err
+    }
+
+    return "", fmt.Errorf("unknown tool: %s", name)
+}
+```
