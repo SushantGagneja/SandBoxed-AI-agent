@@ -86,3 +86,59 @@ func runTool(name string, input json.RawMessage) (string, error) {
     return "", fmt.Errorf("unknown tool: %s", name)
 }
 ```
+## The agent loop
+
+```go
+func agentLoop(client *http.Client, apiKey string, history []Message) ([]Message, error) {
+    for {
+        resp, err := callAPI(client, apiKey, Request{
+            Model:     "claude-sonnet-5-5",
+            MaxTokens: 4096,
+            Messages:  history,
+            Tools:     []Tool{fileReadTool},
+        })
+
+        if err != nil {
+            return history, err
+        }
+
+        // Always append the assistant turn as-is
+        history = append(history, Message{
+            Role:    "assistant",
+            Content: resp.Content,
+        })
+
+        if resp.StopReason != "tool_use" {
+            return history, nil // done: print the text blocks
+        }
+
+        // Run every tool_use block, collect results in ONE user message
+        var results []ContentBlock
+
+        for _, b := range resp.Content {
+            if b.Type != "tool_use" {
+                continue
+            }
+
+            out, err := runTool(b.Name, b.Input)
+
+            block := ContentBlock{
+                Type:      "tool_result",
+                ToolUseID: b.ID,
+                Content:   out,
+            }
+
+            if err != nil {
+                block.Content, block.IsError = err.Error(), true
+            }
+
+            results = append(results, block)
+        }
+
+        history = append(history, Message{
+            Role:    "user",
+            Content: results,
+        })
+    }
+}
+```
