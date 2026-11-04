@@ -15,3 +15,9 @@ func main() {
 	task := strings.Join(os.Args[1:], " ")
 	_ = task
 }
+	key := os.Getenv("OPENROUTER_API_KEY")
+	model := os.Getenv("OPENROUTER_MODEL")
+	if key == "" || model == "" {
+		fmt.Fprintln(os.Stderr, "error: OPENROUTER_API_KEY or OPENROUTER_MODEL is not set")
+		os.Exit(1)
+	}
